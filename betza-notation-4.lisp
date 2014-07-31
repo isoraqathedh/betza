@@ -61,6 +61,23 @@
 	    lower-left-quadrant  (make-array (list ymin xmin) :initial-element nil)
 	    lower-right-quadrant (make-array (list ymin xmax) :initial-element nil)))))
 
+(defmethod initialize-instance :after ((instance board) &key)
+  (with-slots (upper-left-quadrant upper-right-quadrant
+               lower-left-quadrant lower-right-quadrant
+               lower-left-corner   upper-right-corner
+               plus-x-axis minus-x-axis
+               plus-y-axis minus-y-axis origin) instance
+    (let ((xmin (- (aref lower-left-corner  0)))
+	  (xmax (aref upper-right-corner 0))
+	  (ymin (- (aref lower-left-corner  1)))
+	  (ymax (aref upper-right-corner 1)))
+      (setf plus-x-axis          (make-array xmax :initial-element nil)
+	    plus-y-axis          (make-array ymax :initial-element nil)
+	    minus-x-axis         (make-array xmin :initial-element nil)
+	    minus-y-axis         (make-array ymin :initial-element nil)
+	    upper-left-quadrant  (make-array (list ymax xmin) :initial-element nil)
+	    upper-right-quadrant (make-array (list ymax xil)))))
+
 (defmethod print-object ((object board) stream)
   (with-accessors ((upper-right-corner upper-right-corner)
                    (lower-left-corner lower-left-corner)) object
@@ -273,19 +290,23 @@
       (dolist (i destination-list)
         (push-to-board i board))
       (print-board board)
-      board))            with dx = (destination-x range)
-            with dy = (destination-y range)
-            for current-cell-x = dx then (+ current-cell-x dx)
-            for current-cell-y = dy then (+ current-cell-y dy)
-            for i from 1 to 20000 ; safety valve
-            until (or (if (range-length range)
-                          (> i (range-length range)))
-                      (not (<= lim-llx current-cell-x lim-urx))
-                      (not (<= lim-lly current-cell-y lim-ury)))
-            collect (make-instance 'destination
-                                   :x current-cell-x
-                                   :y current-cell-y
-                                   :signature (cons :range (signature range))))))
+      board))
+
+(defmethod range->destination-list ((range range) &optional board)
+  (when (numberp (range-length range))
+    (loop with dx = (destination-x range)
+          with dy = (destination-y range)
+          for current-cell-x = dx then (+ current-cell-x dx)
+          for current-cell-y = dy then (+ current-cell-y dy)
+          for i from 1 to 20000 ; safety valve
+          until (or (if (range-length range)
+                        (> i (range-length range)))
+                    (not (<= lim-llx current-cell-x lim-urx))
+                    (not (<= lim-lly current-cell-y lim-ury)))
+          collect (make-instance 'destination
+                                 :x current-cell-x
+                                 :y current-cell-y
+                                 :signature (cons :range (signature range))))))
 
 (defmethod range->destination-list ((range list) &optional board)
   (loop for i in range
