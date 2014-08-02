@@ -76,7 +76,7 @@
 	    minus-x-axis         (make-array xmin :initial-element nil)
 	    minus-y-axis         (make-array ymin :initial-element nil)
 	    upper-left-quadrant  (make-array (list ymax xmin) :initial-element nil)
-	    upper-right-quadrant (make-array (list ymax xil)))))
+	    upper-right-quadrant (make-array (list ymax xmin))))))
 
 (defmethod print-object ((object board) stream)
   (with-accessors ((upper-right-corner upper-right-corner)
@@ -291,6 +291,16 @@
         (push-to-board i board))
       (print-board board)
       board))
+
+(defclass range (destination)
+  ((range :initarg :range
+          :initform nil
+          :documentation "The maximum range that the piece can travel. NIL means \"infinity\"."))
+  (:documentation "Pieces with range, i.e. can repeat it in the same direction for as long as directed."))
+
+;; (defgeneric destination->range (range distance)
+;;   (:method ((range range) (distance (eql nil)))
+;;     (make-instance 'range
 
 (defmethod range->destination-list ((range range) &optional board)
   (when (numberp (range-length range))
