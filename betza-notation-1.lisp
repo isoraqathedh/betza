@@ -76,7 +76,6 @@
    "Range: a step that can be repeated for as long as the range continues or an edge is reached"))
 
 
-
 ;;; Transform betza-string into #<movement-component>s.
 (defun betza-string->movement-component (betza-string)
   "Turns a single letter (such as F, D, N, A, G) into a movement-component."
