@@ -52,7 +52,11 @@
 
 ;;; Base-modifiers class (use or not?)
 
-(defclass modifiers () ()
+(defclass modifiers ()
+  ((can-land :accessor can-land
+             :initarg :can-land
+             :initform '(:empty :enemy)
+             :documentation "Describes which kinds of squares the space can land on: empty, contains enemy, or contains friendly."))
   (:documentation "Catch-all class for methods that specialize on all modifiers instead of specific ones."))
 
 (defclass directions (modifiers)
@@ -63,17 +67,28 @@
     :documentation "Directions in the movement-component. Must contain subsets of the default."))
   (:documentation "Direction specifier."))
 
+(defclass range (modifiers)
+  ((distance :accessor distance
+             :initarg :distance
+             :initform nil
+             :documentation "The maximum distance the range is effective for. Nil means infinite."))
+  (:documentation
+   "Range: a step that can be repeated for as long as the range continues or an edge is reached"))
+
 
 
 ;;; Transform betza-string into #<movement-component>s.
 (defun betza-string->movement-component (betza-string)
   "Turns a single letter (such as F, D, N, A, G) into a movement-component."
   ;; To do: support modifiers and riders (turn R into WW, support things like fN, etc.)
-  (make-instance
-   'movement-component
-   :x (car (gethash (or (find-symbol betza-string "KEYWORD")
-                        (intern betza-string "KEYWORD"))
-                    *location-descriptors*))
-   :y (cdr (gethash (or (find-symbol betza-string "KEYWORD")
-                        (intern betza-string "KEYWORD"))
-                    *location-descriptors*))))
+  (let ((landmark-letter (string-upcase
+                          (elt
+                           (reverse betza-string) 0))))
+    (make-instance
+     'movement-component
+     :x (car (gethash (or (find-symbol landmark-letter "KEYWORD")
+                          (intern landmark-letter "KEYWORD"))
+                      *location-descriptors*))
+     :y (cdr (gethash (or (find-symbol landmark-letter "KEYWORD")
+                          (intern landmark-letter "KEYWORD"))
+                      *location-descriptors*)))))
