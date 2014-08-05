@@ -1,6 +1,11 @@
 ;;;; Betza notation marker
 ;;;; Take 5 (but labeled 1 because whatever)
 
+(defpackage #:info.isoraqathedh.betza
+  (:use :cl :plump :cl-ppcre))
+
+(in-package #:info.isoraqathedh.betza)            
+
 ;;; Globals
 
 (defvar *location-descriptors*
@@ -91,3 +96,46 @@
      :y (cdr (gethash (or (find-symbol landmark-letter "KEYWORD")
                           (intern landmark-letter "KEYWORD"))
                       *location-descriptors*)))))
+
+(define-matcher uppercase (in #\A #\Z))
+(define-matcher numerals (in #\0 #\9))
+
+(defun read-bracket ()
+  "Reads fragments of funny notation inside brackets"
+  (consume)
+  (loop for next = (peek)
+        while (and next (char/= next #\]))
+        collect (read-piece)
+        finally (consume)))
+
+(defun read-piece ()
+  "Reads a fragment of funny notation up to a landmark (rN rNN cpR4, up to 1 or 2 capital letter + opt. digit)"
+  (let ((tag (consume-until (make-matcher (or :uppercase (any #\[ #\])))))
+        (next (peek)))
+    (format t "~a & ~s, " tag next)
+    (case next
+      (#\[ (cons tag (read-bracket)))
+      (#\] tag)
+      (T (let ((landmark-letter (consume))
+               (next-next (peek))
+               (not-a-number (make-matcher (not :numerals))))
+           (cond ((null next) tag)
+                 ((null next-next) (format nil "~a~a" tag landmark-letter))
+                 ((char= next-next landmark-letter)
+                  ;; Case: doubled and ONLY doubled letters (AA, NN) followed by a number
+                  (consume)
+                  (format nil "~a~a~a~:[~;~:*~a~]" tag next-next next-next (consume-until not-a-number)))
+                 ((find next-next "0123456789" :test #'char-equal) ;; Case: followed ONLY by a number
+                  (format nil "~a~a~a" tag landmark-letter (consume-until not-a-number)))
+                 (t (format nil "~a~a" tag landmark-letter)))))))))
+                 
+       (format NIL "~a~:[~;~:*~a~]" tag (consume-until
+                                           (make-matcher
+                                            (not
+                                             (or (is (string next)) :numerals)))))))))
+
+(defun funny-notation->parsed-fragments (string)
+  "Parses funny notation into smaller pieces for easier processing"
+  (with-lexer-environment (string)
+    (loop while (peek)
+          collect (read-piece))))
