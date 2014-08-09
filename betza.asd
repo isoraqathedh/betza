@@ -8,5 +8,6 @@
   :licence "MIT"
   :description "Simple converter of Betza Funny notation into movement diagrams (plus a few more things in passing)"
   :serial T
-  :components ((:file "betza-notation-1"))
+  :components ((:file "parser")
+               (:file "betza-notation-1"))
   :depends-on (:plump))
