@@ -2,7 +2,7 @@
 ;;;; Take 5 (but labeled 1 because whatever)
 
 (defpackage #:info.isoraqathedh.betza
-  (:use :cl :plump :cl-ppcre))
+  (:use :cl :plump :cl-ppcre :plump-parser))
 
 (in-package #:info.isoraqathedh.betza)            
 
@@ -79,63 +79,3 @@
              :documentation "The maximum distance the range is effective for. Nil means infinite."))
   (:documentation
    "Range: a step that can be repeated for as long as the range continues or an edge is reached"))
-
-
-;;; Transform betza-string into #<movement-component>s.
-(defun betza-string->movement-component (betza-string)
-  "Turns a single letter (such as F, D, N, A, G) into a movement-component."
-  ;; To do: support modifiers and riders (turn R into WW, support things like fN, etc.)
-  (let ((landmark-letter (string-upcase
-                          (elt
-                           (reverse betza-string) 0))))
-    (make-instance
-     'movement-component
-     :x (car (gethash (or (find-symbol landmark-letter "KEYWORD")
-                          (intern landmark-letter "KEYWORD"))
-                      *location-descriptors*))
-     :y (cdr (gethash (or (find-symbol landmark-letter "KEYWORD")
-                          (intern landmark-letter "KEYWORD"))
-                      *location-descriptors*)))))
-
-(define-matcher uppercase (in #\A #\Z))
-(define-matcher numerals (in #\0 #\9))
-
-(defun read-bracket ()
-  "Reads fragments of funny notation inside brackets"
-  (consume)
-  (loop for next = (peek)
-        while (and next (char/= next #\]))
-        collect (read-piece)
-        finally (consume)))
-
-(defun read-piece ()
-  "Reads a fragment of funny notation up to a landmark (rN rNN cpR4, up to 1 or 2 capital letter + opt. digit)"
-  (let ((tag (consume-until (make-matcher (or :uppercase (any #\[ #\])))))
-        (next (peek)))
-    (format t "~a & ~s, " tag next)
-    (case next
-      (#\[ (cons tag (read-bracket)))
-      (#\] tag)
-      (T (let ((landmark-letter (consume))
-               (next-next (peek))
-               (not-a-number (make-matcher (not :numerals))))
-           (cond ((null next) tag)
-                 ((null next-next) (format nil "~a~a" tag landmark-letter))
-                 ((char= next-next landmark-letter)
-                  ;; Case: doubled and ONLY doubled letters (AA, NN) followed by a number
-                  (consume)
-                  (format nil "~a~a~a~:[~;~:*~a~]" tag next-next next-next (consume-until not-a-number)))
-                 ((find next-next "0123456789" :test #'char-equal) ;; Case: followed ONLY by a number
-                  (format nil "~a~a~a" tag landmark-letter (consume-until not-a-number)))
-                 (t (format nil "~a~a" tag landmark-letter)))))))))
-                 
-       (format NIL "~a~:[~;~:*~a~]" tag (consume-until
-                                           (make-matcher
-                                            (not
-                                             (or (is (string next)) :numerals)))))))))
-
-(defun funny-notation->parsed-fragments (string)
-  "Parses funny notation into smaller pieces for easier processing"
-  (with-lexer-environment (string)
-    (loop while (peek)
-          collect (read-piece))))
