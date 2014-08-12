@@ -26,7 +26,7 @@
   ((powers :initarg :powers :initform () :accessor powers)))
 
 (defmethod print-object ((piece piece) stream)
-  (format stream "#b\"~{~a~}\"" (powers piece)))
+  (format stream "#?\"~{~a~}\"" (powers piece)))
 
 (defun read-bracketed ()
   (loop for next = (peek)
@@ -76,7 +76,7 @@
   (:method (object)
     (format T "~s" object)))
 
-(set-dispatch-macro-character #\# #\b #'(lambda (s c a)
+(set-dispatch-macro-character #\# #\? #'(lambda (s c a)
                                           (declare (ignore c a))
                                           (let ((string (read s)))
                                             (etypecase string
