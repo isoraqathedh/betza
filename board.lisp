@@ -45,12 +45,20 @@
               :documentation "list of objects that represents what the piece can do at that square."))
   (:documentation "A representation of what a piece can do at a square."))
 
+(defun riderp (power)
+  "Detects if a move has a range modifier. Returns T/NIL as well as length"
+  (when (or (find (landmark power) '("R" "B" "Q") :test #'string=)
+            (= (length (landmark power)) 2))
+    (if (limit power) (parse-integer (limit power)) :infinite)))
+
 (defun capturingp (modifiers)
+  "Detects if a piece can capture or not"
   (or (find #\c modifiers)
       (not (or (find #\m modifiers)
                (find #\c modifiers)))))
 
 (defun movingp (modifiers)
+  "Detects if a piece can move or not"
   (or (find #\m modifiers)
       (not (or find #\m modifiers)
            (or find #\c modifiers))))
