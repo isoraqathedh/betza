@@ -1,4 +1,4 @@
-(defpackage #:betza-lexer
+(defpackage #:info.isoraqathedh.betza-lexer
   (:use #:cl #:plump-parser)
   (:export 
    #:power
