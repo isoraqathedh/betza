@@ -1,5 +1,6 @@
 (defpackage #:info.isoraqathedh.betza-lexer
   (:use #:cl #:plump-parser)
+  (:nicknames :betza-lexer)
   (:export 
    #:power
    #:landmark
