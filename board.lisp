@@ -3,29 +3,6 @@
 
 (in-package :info.isoraqathedh.betza.board)
 
-;;; Globals
-
-(defvar *location-descriptors*
-  (loop with hash-table = (make-hash-table)
-        for (coords . names)
-          in '(((0 . 0) :zero)
-               ((1 . 0) :wazir :w)
-               ((1 . 1) :ferz :advisor :f)
-               ((2 . 0) :dabbabah :war-machine :d)
-               ((2 . 1) :knight :horse :n)
-               ((2 . 2) :alfil :elephant :a)
-               ((3 . 0) :threeleaper :g)
-               ((3 . 1) :camel :j)
-               ((3 . 2) :zebra :l)
-               ((3 . 3) :tripper :h)
-               ((4 . 0) :fourleaper)
-               ((4 . 1) :giraffe)
-               ((4 . 2) :double-knight)
-               ((4 . 3) :antelope))
-        do (loop for i in names do (setf (gethash i hash-table) coords))
-        finally (return hash-table))
-  "The exact location where some names belong to (a displacement of (2, 1) is a knight-distance away.")
-
 ;;; Classes:
 ;;; destination class
 ;;; See class documentation for usage.
@@ -45,11 +22,45 @@
               :documentation "list of objects that represents what the piece can do at that square."))
   (:documentation "A representation of what a piece can do at a square."))
 
+(defmethod print-object ((object destination) stream)
+  (print-unreadable-object (object stream :type t)
+    (with-accessors ((x destination-x) (y destination-y)) object
+      (format stream "(~a, ~a)" x y))))
+
+(defparameter *primitives*
+  (loop with ht = (make-hash-table)
+        for (landmark . coords) in '((#\W 1 0) (#\F 1 1)
+                                     (#\D 2 0) (#\N 2 1) (#\A 2 2)
+                                     (#\H 3 0) (#\L 3 1) (#\J 3 2) (#\G 3 3))
+        do (setf (gethash landmark ht) coords)
+        finally (return ht))
+  "Where each of the primitives point to, for instance \"W\" points to (1, 0).")
+
 (defun riderp (power)
   "Detects if a move has a range modifier. Returns T/NIL as well as length"
-  (when (or (find (landmark power) '("R" "B" "Q") :test #'string=)
+  (when (or (limit power)
+            (find (landmark power) '("R" "B" "Q") :test #'string=)
             (= (length (landmark power)) 2))
     (if (limit power) (parse-integer (limit power)) :infinite)))
+
+(defun make-destination-object (x y signature)
+  "Helper function: makes a DESTINATION"
+  (make-instance 'destination :x x :y y :signature signature))
+
+(defun make-destinations (betza)
+  "Turns a funny notation item into a list of destinations."
+  ;; Consider also turning things into target-squares here.
+  (loop for power in (powers betza)
+        for riderp = (riderp power)
+        for landmark = (aref (landmark power) 0)
+        append (cond ((find landmark "QK")
+                      (list (make-destination-object 1 0 (if riderp (list :range riderp)))
+                            (make-destination-object 1 1 (if riderp (list :range riderp)))))
+                     ((eql landmark #\R) (list (make-destination-object 1 0 (list :range riderp))))
+                     ((eql landmark #\B) (list (make-destination-object 1 1 (list :range riderp))))
+                     (t (list (make-destination-object (first (gethash landmark *primitives*))
+                                                       (second (gethash landmark *primitives*))
+                                                       (if riderp (list :range riderp))))))))
 
 (defun capturingp (modifiers)
   "Detects if a piece can capture or not"
