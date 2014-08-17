@@ -24,8 +24,8 @@
 
 (defmethod print-object ((object destination) stream)
   (print-unreadable-object (object stream :type t)
-    (with-accessors ((x destination-x) (y destination-y)) object
-      (format stream "(~a, ~a)" x y))))
+    (with-accessors ((x destination-x) (y destination-y) (signature signature)) object
+      (format stream "(~a, ~a) ~s" x y signature))))
 
 (defparameter *primitives*
   (loop with ht = (make-hash-table)
@@ -43,7 +43,7 @@
             (= (length (landmark power)) 2))
     (if (limit power) (parse-integer (limit power)) :infinite)))
 
-(defun make-destination-object (x y signature)
+(defun make-destination-object (x y &optional signature)
   "Helper function: makes a DESTINATION"
   (make-instance 'destination :x x :y y :signature signature))
 
@@ -51,16 +51,18 @@
   "Turns a funny notation item into a list of destinations."
   ;; Consider also turning things into target-squares here.
   (loop for power in (powers betza)
-        for riderp = (riderp power)
-        for landmark = (aref (landmark power) 0)
-        append (cond ((find landmark "QK")
-                      (list (make-destination-object 1 0 (if riderp (list :range riderp)))
-                            (make-destination-object 1 1 (if riderp (list :range riderp)))))
-                     ((eql landmark #\R) (list (make-destination-object 1 0 (list :range riderp))))
-                     ((eql landmark #\B) (list (make-destination-object 1 1 (list :range riderp))))
-                     (t (list (make-destination-object (first (gethash landmark *primitives*))
-                                                       (second (gethash landmark *primitives*))
-                                                       (if riderp (list :range riderp))))))))
+        append (parse-fragment power)))
+
+;;         for riderp = (riderp power)
+;;         for landmark = (aref (landmark power) 0)
+;; (cond ((find landmark "QK")
+;;               (list (make-destination-object 1 0 (if riderp (list :range riderp)))
+;;                     (make-destination-object 1 1 (if riderp (list :range riderp)))))
+;;              ((eql landmark #\R) (list (make-destination-object 1 0 (list :range riderp))))
+;;              ((eql landmark #\B) (list (make-destination-object 1 1 (list :range riderp))))
+;;              (t (list (make-destination-object (first (gethash landmark *primitives*))
+;;                                                (second (gethash landmark *primitives*))
+;;                                                (if riderp (list :range riderp))))))))
 
 (defun capturingp (modifiers)
   "Detects if a piece can capture or not"
@@ -73,3 +75,107 @@
   (or (find #\m modifiers)
       (not (or find #\m modifiers)
            (or find #\c modifiers))))
+
+(defun generate-directions (x y)
+  (let ((max (max x y))
+        (-max (- (max x y)))
+        (min (min x y))
+        (-min (- (min x y))))
+    (mapcar #'(lambda (p q) (make-destination-object p q))
+            (list max  max min  min -max -max -min -min)
+            (list min -min max -max  min -min  max -max))))
+
+(defmacro force-exist-symbol (name package)
+  (let ((name-sym (gensym))
+        (pack-sym (gensym)))
+    `(let ((,name-sym ,name)
+           (,pack-sym ,package))
+       (or (find-symbol (string-upcase ,name-sym)
+                        (string-upcase ,pack-sym))
+           (intern (string-upcase ,name-sym)
+                   (string-upcase ,pack-sym))))))
+
+(defun detect-direction (destination)
+  "Finds a correct description of the exact location of the destination using brfl(vs)-style descriptions."
+  (let ((fstr (make-array '(3) :element-type 'base-char :fill-pointer 0)) ; Only a maximum of 3 characters will be written into the string
+        (x (destination-x destination))
+        (y (destination-y destination)))
+    (with-output-to-string (str fstr)
+      (format str "~[b~;~;f~]" (1+ (signum y)))
+      (when (/= 0 (abs x) (abs y)) ;; hippogonal
+        (if (< (abs y) (abs x))
+            (format str "s")
+            (format str "~:[b~;f~]" (plusp y))))
+      (format str "~[l~;~;r~]" (1+ (signum x))))
+    (unless (string-equal "" fstr) ; catch (0, 0) and return nil for it.
+      (force-exist-symbol fstr "keyword"))))
+
+(defun decode-directional-modifiers (modifier-string &optional (context-landmark "W"))
+  "Takes the modifier string of directions and transform them into a list of direction selectors."
+  ;; Annoyingly, the semantics of each modifier is different depending on whether or not the landmark is orthogonal, diagonal or hippogonal.
+  ;; fbN is not the same as fNbN, but fBbB is the same as fbB and the same goes with R;
+  ;; but even worse is that fBbB = B while the same is not with fbR!
+  ;; Things get even worse with the two hybrid landmarks Q and K,
+  ;; where bK is bWbF, brlK is brlFbK, etc etc etc.
+  ;; As such it is best to consider each case separate.
+  (macrolet ((case-using-equal (keyform &body clauses)
+               ;; A lot of the things we do here could have used (case) but unfortunately case only uses eql as its comparison.
+               ;; so here's a variant that uses #'equal.
+               (let ((kf-sym (gensym)))
+                 `(let ((,kf-sym ,keyform))
+                    (cond ,@(loop for (cases . then) in clauses
+                                  if (listp cases)
+                                    append (loop for case in cases
+                                                 collect `((equal ,kf-sym ,case) ,@then))
+                                  else if (eql cases t)
+                                         collect `(t ,@then)
+                                  else
+                                    collect `((equal ,kf-sym ,cases) ,@then)))))))
+    (ecase (aref context-landmark 0) ; the first letter (the second letter is always the same) is...
+      ((#\W #\R #\D #\H) ; orthogonal
+       (remove-duplicates
+        (loop for i across modifier-string
+              append (ecase i
+                       (#\s (list :r :l))
+                       (#\v (list :f :b))
+                       ((#\b #\r #\f #\l) (list (force-exist-symbol i :keyword)))))))
+      ((#\F #\B #\A #\G) ; diagonal
+       (let ((effective-directions (remove-if-not #'(lambda (p) (find p "brfl")) modifier-string)))
+         (case-using-equal effective-directions 
+           ("b" (list :br :bl))
+           ("r" (list :fr :br))
+           ("f" (list :fr :fl))
+           ("l" (list :fl :bl))
+           (("br" "bl" "fr" "fl") (list (force-exist-symbol effective-directions :keyword)))
+           (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
+      ((#\N #\L #\J) ; hippogonal
+       (let ((effective-directions (remove-if-not #'(lambda (p) (find p "brflvsh")) modifier-string)))
+         (case-using-equal effective-directions
+           (("b" "bh") (list :bbr :bsr :bbl :bsl))
+           (("r" "rh") (list :bbr :bsr :ffr :fsr))
+           (("f" "fh") (list :ffr :fsr :ffl :fsl))
+           (("l" "ll") (list :ffl :fsl :bsl :bbl))
+           (("s" "rl") (list :fsr :fsl :bsr :bsl))
+           (("v" "fb") (list :ffl :ffr :bbl :bbr))
+           ("ff" (list :ffl :ffr))
+           ("bb" (list :bbl :bbr))
+           ("fs" (list :fsl :fsr))
+           ("bs" (list :bsl :bsr))
+           ("ll" (list :fsl :bsl))
+           ("lv" (list :ffl :bbl))
+           ("rr" (list :fsr :bsr))
+           ("rv" (list :ffr :ffl))
+           (("ffr" "ffl" "fsr" "fsl" "bbr" "bbl" "bsr" "bsl")
+            (list (force-exist-symbol effective-directions :keyword)))
+           (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
+      ((#\Q #\K) ; hybrid directions
+       (remove-duplicates
+        (loop for i across (remove-if-not #'(lambda (p) (find p "brflvs")) modifier-string)
+              append (ecase i
+                       (#\b (list :bl :b :br))
+                       (#\r (list :fr :r :br))
+                       (#\f (list :fl :f :fr))
+                       (#\l (list :fl :l :bl))
+                       (#\v (list :fl :f :fr :bl :b :br))
+                       (#\s (list :fl :l :bl :fr :r :br)))))))))
+
