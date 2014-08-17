@@ -77,11 +77,12 @@
            (or find #\c modifiers))))
 
 (defun generate-directions (x y)
+  "Generates a list of destinations radially symmetric with the original (x, y) pair."
   (let ((max (max x y))
         (-max (- (max x y)))
         (min (min x y))
         (-min (- (min x y))))
-    (mapcar #'(lambda (p q) (make-destination-object p q))
+    (mapcar #'make-destination-object
             (list max  max min  min -max -max -min -min)
             (list min -min max -max  min -min  max -max))))
 
