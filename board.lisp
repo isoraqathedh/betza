@@ -53,17 +53,6 @@
   (loop for power in (powers betza)
         append (parse-fragment power)))
 
-;;         for riderp = (riderp power)
-;;         for landmark = (aref (landmark power) 0)
-;; (cond ((find landmark "QK")
-;;               (list (make-destination-object 1 0 (if riderp (list :range riderp)))
-;;                     (make-destination-object 1 1 (if riderp (list :range riderp)))))
-;;              ((eql landmark #\R) (list (make-destination-object 1 0 (list :range riderp))))
-;;              ((eql landmark #\B) (list (make-destination-object 1 1 (list :range riderp))))
-;;              (t (list (make-destination-object (first (gethash landmark *primitives*))
-;;                                                (second (gethash landmark *primitives*))
-;;                                                (if riderp (list :range riderp))))))))
-
 (defun capturingp (modifiers)
   "Detects if a piece can capture or not"
   (or (find #\c modifiers)
@@ -155,7 +144,7 @@
            (("b" "bh") (list :bbr :bsr :bbl :bsl))
            (("r" "rh") (list :bbr :bsr :ffr :fsr))
            (("f" "fh") (list :ffr :fsr :ffl :fsl))
-           (("l" "ll") (list :ffl :fsl :bsl :bbl))
+           (("l" "lh") (list :ffl :fsl :bsl :bbl))
            (("s" "rl") (list :fsr :fsl :bsr :bsl))
            (("v" "fb") (list :ffl :ffr :bbl :bbr))
            ("ff" (list :ffl :ffr))
