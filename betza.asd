@@ -9,5 +9,5 @@
   :description "Simple converter of Betza Funny notation into movement diagrams (plus a few more things in passing)"
   :serial T
   :components ((:file "parser")
-               (:file "board"))
+               (:file "destination"))
   :depends-on (:plump))
