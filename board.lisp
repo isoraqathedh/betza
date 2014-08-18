@@ -62,10 +62,10 @@
 (defun movingp (modifiers)
   "Detects if a piece can move or not"
   (or (find #\m modifiers)
-      (not (or find #\m modifiers)
-           (or find #\c modifiers))))
+      (not (or (find #\m modifiers)
+               (find #\c modifiers)))))
 
-(defun generate-directions (x y)
+(defun generate-directions (x y &optional sig)
   "Generates a list of destinations radially symmetric with the original (x, y) pair."
   (let ((max (max x y))
         (-max (- (max x y)))
@@ -73,7 +73,8 @@
         (-min (- (min x y))))
     (mapcar #'make-destination-object
             (list max  max min  min -max -max -min -min)
-            (list min -min max -max  min -min  max -max))))
+            (list min -min max -max  min -min  max -max)
+            (list sig  sig sig  sig  sig  sig  sig  sig))))
 
 (defmacro force-exist-symbol (name package)
   (let ((name-sym (gensym))
@@ -100,6 +101,20 @@
     (unless (string-equal "" fstr) ; catch (0, 0) and return nil for it.
       (force-exist-symbol fstr "keyword"))))
 
+(defmacro case-using-equal (keyform &body clauses)
+  ;; A lot of the things we do here could have used (case) but unfortunately case only uses eql as its comparison.
+  ;; so here's a variant that uses #'equal.
+  (let ((kf-sym (gensym)))
+    `(let ((,kf-sym ,keyform))
+       (cond ,@(loop for (cases . then) in clauses
+                     if (listp cases)
+                       append (loop for case in cases
+                                    collect `((equal ,kf-sym ,case) ,@then))
+                     else if (eql cases t)
+                            collect `(t ,@then)
+                     else
+                       collect `((equal ,kf-sym ,cases) ,@then))))))
+
 (defun decode-directional-modifiers (modifier-string &optional (context-landmark "W"))
   "Takes the modifier string of directions and transform them into a list of direction selectors."
   ;; Annoyingly, the semantics of each modifier is different depending on whether or not the landmark is orthogonal, diagonal or hippogonal.
@@ -108,64 +123,57 @@
   ;; Things get even worse with the two hybrid landmarks Q and K,
   ;; where bK is bWbF, brlK is brlFbK, etc etc etc.
   ;; As such it is best to consider each case separate.
-  (macrolet ((case-using-equal (keyform &body clauses)
-               ;; A lot of the things we do here could have used (case) but unfortunately case only uses eql as its comparison.
-               ;; so here's a variant that uses #'equal.
-               (let ((kf-sym (gensym)))
-                 `(let ((,kf-sym ,keyform))
-                    (cond ,@(loop for (cases . then) in clauses
-                                  if (listp cases)
-                                    append (loop for case in cases
-                                                 collect `((equal ,kf-sym ,case) ,@then))
-                                  else if (eql cases t)
-                                         collect `(t ,@then)
-                                  else
-                                    collect `((equal ,kf-sym ,cases) ,@then)))))))
-    (ecase (aref context-landmark 0) ; the first letter (the second letter is always the same) is...
-      ((#\W #\R #\D #\H) ; orthogonal
-       (remove-duplicates
-        (loop for i across modifier-string
-              append (ecase i
-                       (#\s (list :r :l))
-                       (#\v (list :f :b))
-                       ((#\b #\r #\f #\l) (list (force-exist-symbol i :keyword)))))))
-      ((#\F #\B #\A #\G) ; diagonal
-       (let ((effective-directions (remove-if-not #'(lambda (p) (find p "brfl")) modifier-string)))
-         (case-using-equal effective-directions 
-           ("b" (list :br :bl))
-           ("r" (list :fr :br))
-           ("f" (list :fr :fl))
-           ("l" (list :fl :bl))
-           (("br" "bl" "fr" "fl") (list (force-exist-symbol effective-directions :keyword)))
-           (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
-      ((#\N #\L #\J) ; hippogonal
-       (let ((effective-directions (remove-if-not #'(lambda (p) (find p "brflvsh")) modifier-string)))
-         (case-using-equal effective-directions
-           (("b" "bh") (list :bbr :bsr :bbl :bsl))
-           (("r" "rh") (list :bbr :bsr :ffr :fsr))
-           (("f" "fh") (list :ffr :fsr :ffl :fsl))
-           (("l" "lh") (list :ffl :fsl :bsl :bbl))
-           (("s" "rl") (list :fsr :fsl :bsr :bsl))
-           (("v" "fb") (list :ffl :ffr :bbl :bbr))
-           ("ff" (list :ffl :ffr))
-           ("bb" (list :bbl :bbr))
-           ("fs" (list :fsl :fsr))
-           ("bs" (list :bsl :bsr))
-           ("ll" (list :fsl :bsl))
-           ("lv" (list :ffl :bbl))
-           ("rr" (list :fsr :bsr))
-           ("rv" (list :ffr :ffl))
-           (("ffr" "ffl" "fsr" "fsl" "bbr" "bbl" "bsr" "bsl")
-            (list (force-exist-symbol effective-directions :keyword)))
-           (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
-      ((#\Q #\K) ; hybrid directions
-       (remove-duplicates
-        (loop for i across (remove-if-not #'(lambda (p) (find p "brflvs")) modifier-string)
-              append (ecase i
-                       (#\b (list :bl :b :br))
-                       (#\r (list :fr :r :br))
-                       (#\f (list :fl :f :fr))
-                       (#\l (list :fl :l :bl))
-                       (#\v (list :fl :f :fr :bl :b :br))
-                       (#\s (list :fl :l :bl :fr :r :br)))))))))
+  (ecase (aref context-landmark 0) ; the first letter (the second letter is always the same) is...
+    ((#\W #\R #\D #\H)             ; orthogonal
+     (if (equal "" (remove-if-not #'(lambda (p) (find p "brflvs")) modifier-string))
+         (list :f :b :r :l)
+         (remove-duplicates
+          (loop for i across modifier-string
+                append (case i
+                         (#\s (list :r :l))
+                         (#\v (list :f :b))
+                         ((#\b #\r #\f #\l) (list (force-exist-symbol i :keyword))))))))
+    ((#\F #\B #\A #\G)                  ; diagonal
+     (let ((effective-directions (remove-if-not #'(lambda (p) (find p "brfl")) modifier-string)))
+       (case-using-equal effective-directions
+         ("" (list :br :bl :fr :fl))
+         ("b" (list :br :bl))
+         ("r" (list :fr :br))
+         ("f" (list :fr :fl))
+         ("l" (list :fl :bl))
+         (("br" "bl" "fr" "fl") (list (force-exist-symbol effective-directions :keyword)))
+         (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
+    ((#\N #\L #\J)                      ; hippogonal
+     (let ((effective-directions (remove-if-not #'(lambda (p) (find p "brflvsh")) modifier-string)))
+       (case-using-equal effective-directions
+         ("" (list :ffl :ffr :bbl :bbr :fsl :fsr :bsl :bsr)) 
+         (("b" "bh") (list :bbr :bsr :bbl :bsl))
+         (("r" "rh") (list :bbr :bsr :ffr :fsr))
+         (("f" "fh") (list :ffr :fsr :ffl :fsl))
+         (("l" "lh") (list :ffl :fsl :bsl :bbl))
+         (("s" "rl") (list :fsr :fsl :bsr :bsl))
+         (("v" "fb") (list :ffl :ffr :bbl :bbr))
+         ("ff" (list :ffl :ffr))
+         ("bb" (list :bbl :bbr))
+         ("fs" (list :fsl :fsr))
+         ("bs" (list :bsl :bsr))
+         ("ll" (list :fsl :bsl))
+         ("lv" (list :ffl :bbl))
+         ("rr" (list :fsr :bsr))
+         ("rv" (list :ffr :ffl))
+         (("ffr" "ffl" "fsr" "fsl" "bbr" "bbl" "bsr" "bsl")
+          (list (force-exist-symbol effective-directions :keyword)))
+         (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
+    ((#\Q #\K)                          ; hybrid directions
+     (if (equal "" (remove-if-not #'(lambda (p) (find p "brflvs")) modifier-string))
+         (list :bl :b :br :fl :f :fr :r :l)
+         (remove-duplicates
+          (loop for i across modifier-string
+                append (case i
+                         (#\b (list :bl :b :br))
+                         (#\r (list :fr :r :br))
+                         (#\f (list :fl :f :fr))
+                         (#\l (list :fl :l :bl))
+                         (#\v (list :fl :f :fr :bl :b :br))
+                         (#\s (list :fl :l :bl :fr :r :br)))))))))
 
