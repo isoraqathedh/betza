@@ -177,3 +177,35 @@
                          (#\v (list :fl :f :fr :bl :b :br))
                          (#\s (list :fl :l :bl :fr :r :br)))))))))
 
+(defun find-destination-roots (power)
+  (let ((signature
+          (append
+           (parse-movement-modifiers power)
+           (parse-range-modifiers power))))
+    (mapcar #'(lambda (p)
+                (find p (case-using-equal (landmark power)
+                          ("Q" (append (generate-directions 1 0 signature)
+                                       (generate-directions 1 1 signature)))
+                          ("K" (append (generate-directions 1 0 signature)
+                                       (generate-directions 1 1 signature)))
+                          (("R" "WW") (generate-directions 1 0 signature))
+                          (("B" "FF") (generate-directions 1 1 signature))
+                          (t (generate-directions
+                              (first (gethash (aref (landmark power) 0) *primitives*))
+                              (second (gethash (aref (landmark power) 0) *primitives*))
+                              signature)))
+                      :key #'detect-direction))
+            (decode-directional-modifiers (modifiers power) (landmark power)))))
+
+(defun parse-range-modifiers (power)
+  (when (riderp power)
+    (list :rider
+          (list :limit (riderp power)
+                :iteration-style (cond ((find #\z (modifiers power)) :zigzag)
+                                       ((find #\q (modifiers power)) :circular)
+                                       ((find #\g (modifiers power)) :grasshopper)
+                                       (t :line))))))
+
+(defun parse-movement-modifiers (power)
+  (list :move (movingp (modifiers power))
+        :capture (capturingp (modifiers power))))
