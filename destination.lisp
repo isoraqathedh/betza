@@ -181,6 +181,7 @@
   (let ((signature
           (append
            (parse-movement-modifiers power)
+           (parse-jumping-modifiers power)
            (parse-range-modifiers power))))
     (mapcar #'(lambda (p)
                 (find p (case-using-equal (landmark power)
@@ -210,3 +211,11 @@
 (defun parse-movement-modifiers (power)
   (list :move (movingp (modifiers power))
         :capture (capturingp (modifiers power))))
+
+(defun parse-jumping-modifiers (power)
+  (when (or (riderp power)
+            (not (or (equal (landmark power) "W")
+                     (equal (landmark power) "F"))))
+    (list :jumping (cond ((find #\n (modifiers power)) nil)
+                         ((find #\j (modifiers power)) t)
+                         (t :default)))))
