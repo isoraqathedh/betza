@@ -204,6 +204,7 @@
                 :iteration-style (cond ((find #\z (modifiers power)) :zigzag)
                                        ((find #\q (modifiers power)) :circular)
                                        ((find #\g (modifiers power)) :grasshopper)
+                                       ((find #\p (modifiers power)) :cannon)
                                        (t :line))))))
 
 (defun parse-movement-modifiers (power)
