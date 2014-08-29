@@ -47,12 +47,6 @@
   "Helper function: makes a DESTINATION"
   (make-instance 'destination :x x :y y :signature signature))
 
-(defun make-destinations (betza)
-  "Turns a funny notation item into a list of destinations."
-  ;; Consider also turning things into target-squares here.
-  (loop for power in (powers betza)
-        append (parse-fragment power)))
-
 (defun capturingp (modifiers)
   "Detects if a piece can capture or not"
   (or (find #\c modifiers)
