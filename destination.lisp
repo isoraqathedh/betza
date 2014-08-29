@@ -197,10 +197,8 @@
            (parse-range-modifiers power))))
     (mapcar #'(lambda (p)
                 (find p (case-using-equal (landmark power)
-                          ("Q" (append (generate-directions 1 0 signature)
-                                       (generate-directions 1 1 signature)))
-                          ("K" (append (generate-directions 1 0 signature)
-                                       (generate-directions 1 1 signature)))
+                          (("Q" "K") (append (generate-directions 1 0 signature)
+                                             (generate-directions 1 1 signature)))
                           (("R" "WW") (generate-directions 1 0 signature))
                           (("B" "FF") (generate-directions 1 1 signature))
                           (t (generate-directions
