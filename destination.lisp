@@ -100,7 +100,7 @@
                      if (listp cases)
                        append (loop for case in cases
                                     collect `((equal ,kf-sym ,case) ,@then))
-                     else if (eql cases t)
+                     else if (or (eql cases t) (eq cases 'otherwise))
                             collect `(t ,@then)
                      else
                        collect `((equal ,kf-sym ,cases) ,@then))))))
