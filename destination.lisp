@@ -126,6 +126,19 @@
                          ((find #\j (modifiers power)) t)
                          (t :default)))))
 
+(defun directionality (landmark)
+  "Takes in a landmark and detects its directionality (orthogonal, diagonal, hippogonal or hybrid)."
+  (multiple-value-bind (displacement found-p) (gethash landmark *primitives*)
+    (cond ((null found-p) (case landmark
+                            ((#\Q #\K) :hybrid)
+                            (#\R :orthogonal)
+                            (#\B :diagonal)
+                            (t (error (format nil "Landmark ~s not found." landmark)))))
+          ((apply #'= displacement) :diagonal)
+          ((some #'zerop displacement) :orthogonal)
+          (t :hippogonal))))
+      
+
 (defun decode-directional-modifiers (modifier-string &optional (context-landmark "W"))
   "Takes the modifier string of directions and transform them into a list of direction selectors."
   ;; Annoyingly, the semantics of each modifier is different depending on whether or not the landmark is orthogonal, diagonal or hippogonal.
@@ -134,8 +147,8 @@
   ;; Things get even worse with the two hybrid landmarks Q and K,
   ;; where bK is bWbF, brlK is brlFbK, etc etc etc.
   ;; As such it is best to consider each case separate.
-  (ecase (aref context-landmark 0) ; the first letter (the second letter is always the same) is...
-    ((#\W #\R #\D #\H)             ; orthogonal
+  (ecase (directionality (aref context-landmark 0)) ; the first letter (the second letter is always the same) is...
+    (:orthogonal
      (if (equal "" (remove-if-not #'(lambda (p) (find p "brflvs")) modifier-string))
          (list :f :b :r :l)
          (remove-duplicates
@@ -144,7 +157,7 @@
                          (#\s (list :r :l))
                          (#\v (list :f :b))
                          ((#\b #\r #\f #\l) (list (force-exist-symbol i :keyword))))))))
-    ((#\F #\B #\A #\G)                  ; diagonal
+    (:diagonal
      (let ((effective-directions (remove-if-not #'(lambda (p) (find p "brfl")) modifier-string)))
        (case-using-equal effective-directions
          ("" (list :br :bl :fr :fl))
@@ -154,7 +167,7 @@
          ("l" (list :fl :bl))
          (("br" "bl" "fr" "fl") (list (force-exist-symbol effective-directions :keyword)))
          (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
-    ((#\N #\L #\J)                      ; hippogonal
+    (:hippogonal
      (let ((effective-directions (remove-if-not #'(lambda (p) (find p "brflvsh")) modifier-string)))
        (case-using-equal effective-directions
          ("" (list :ffl :ffr :bbl :bbr :fsl :fsr :bsl :bsr)) 
@@ -175,7 +188,7 @@
          (("ffr" "ffl" "fsr" "fsl" "bbr" "bbl" "bsr" "bsl")
           (list (force-exist-symbol effective-directions :keyword)))
          (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
-    ((#\Q #\K)                          ; hybrid directions
+    (:hybrid
      (if (equal "" (remove-if-not #'(lambda (p) (find p "brflvs")) modifier-string))
          (list :bl :b :br :fl :f :fr :r :l)
          (remove-duplicates
