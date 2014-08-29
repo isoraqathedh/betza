@@ -70,15 +70,11 @@
             (list min -min max -max  min -min  max -max)
             (list sig  sig sig  sig  sig  sig  sig  sig))))
 
-(defmacro force-exist-symbol (name package)
-  (let ((name-sym (gensym))
-        (pack-sym (gensym)))
-    `(let ((,name-sym ,name)
-           (,pack-sym ,package))
-       (or (find-symbol (string-upcase ,name-sym)
-                        (string-upcase ,pack-sym))
-           (intern (string-upcase ,name-sym)
-                   (string-upcase ,pack-sym))))))
+(defun force-exist-symbol (name package)
+  (or (find-symbol (string-upcase name)
+                   (string-upcase package))
+      (intern (string-upcase name)
+              (string-upcase package))))
 
 (defun detect-direction (destination)
   "Finds a correct description of the exact location of the destination using brfl(vs)-style descriptions."
