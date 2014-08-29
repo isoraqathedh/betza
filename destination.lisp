@@ -92,8 +92,7 @@
       (force-exist-symbol fstr "keyword"))))
 
 (defmacro case-using-equal (keyform &body clauses)
-  ;; A lot of the things we do here could have used (case) but unfortunately case only uses eql as its comparison.
-  ;; so here's a variant that uses #'equal.
+  "A variant of case that uses #'equal as its comparison function rather than the actual case's #'eql. Useful for strings."
   (let ((kf-sym (gensym)))
     `(let ((,kf-sym ,keyform))
        (cond ,@(loop for (cases . then) in clauses
