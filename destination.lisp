@@ -105,6 +105,28 @@
                      else
                        collect `((equal ,kf-sym ,cases) ,@then))))))
 
+(defun parse-range-modifiers (power)
+  (when (riderp power)
+    (list :rider
+          (list :limit (riderp power)
+                :iteration-style (cond ((find #\z (modifiers power)) :zigzag)
+                                       ((find #\q (modifiers power)) :circular)
+                                       ((find #\g (modifiers power)) :grasshopper)
+                                       ((find #\p (modifiers power)) :cannon)
+                                       (t :line))))))
+
+(defun parse-movement-modifiers (power)
+  (list :move (movingp (modifiers power))
+        :capture (capturingp (modifiers power))))
+
+(defun parse-jumping-modifiers (power)
+  (when (or (riderp power)
+            (not (or (equal (landmark power) "W")
+                     (equal (landmark power) "F"))))
+    (list :jumping (cond ((find #\n (modifiers power)) nil)
+                         ((find #\j (modifiers power)) t)
+                         (t :default)))))
+
 (defun decode-directional-modifiers (modifier-string &optional (context-landmark "W"))
   "Takes the modifier string of directions and transform them into a list of direction selectors."
   ;; Annoyingly, the semantics of each modifier is different depending on whether or not the landmark is orthogonal, diagonal or hippogonal.
@@ -187,25 +209,3 @@
                               signature)))
                       :key #'detect-direction))
             (decode-directional-modifiers (modifiers power) (landmark power)))))
-
-(defun parse-range-modifiers (power)
-  (when (riderp power)
-    (list :rider
-          (list :limit (riderp power)
-                :iteration-style (cond ((find #\z (modifiers power)) :zigzag)
-                                       ((find #\q (modifiers power)) :circular)
-                                       ((find #\g (modifiers power)) :grasshopper)
-                                       ((find #\p (modifiers power)) :cannon)
-                                       (t :line))))))
-
-(defun parse-movement-modifiers (power)
-  (list :move (movingp (modifiers power))
-        :capture (capturingp (modifiers power))))
-
-(defun parse-jumping-modifiers (power)
-  (when (or (riderp power)
-            (not (or (equal (landmark power) "W")
-                     (equal (landmark power) "F"))))
-    (list :jumping (cond ((find #\n (modifiers power)) nil)
-                         ((find #\j (modifiers power)) t)
-                         (t :default)))))
