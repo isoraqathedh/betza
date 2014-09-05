@@ -235,3 +235,27 @@
                               signature)))
                       :key #'detect-direction))
             (decode-directional-modifiers (modifiers power) (landmark power)))))
+
+(defgeneric soll (destination &optional want-partial-sums)
+  (:documentation "Computes the square-of-leap-length of a particular destination.")
+  (:method ((destination destination) &optional want-partial-sums)
+    (declare (ignore want-partial-sums))
+    (with-accessors ((x destination-x) (y destination-y)) destination
+      (+ (expt x 2) (expt y 2))))
+  (:method ((list list) &optional want-partial-sums)
+    (loop with most-recent = 0
+          for i in list
+          summing (destination-x i) into sum-x
+          summing (destination-y i) into sum-y
+          doing (setf most-recent (+ (expt sum-x 2) (expt sum-y 2)))
+          collecting most-recent into partial-sums
+          finally (return (if want-partial-sums partial-sums most-recent))))
+  (:method ((compound-destination compound-destination) &optional want-partial-sums)
+    ;; This is probably not needed for the actual item
+    ;; as the plan is that we don't instantiate a compound
+    ;; until we have verified that SOLLs are strictly increasing
+    (soll (elements compound-destination) want-partial-sums)))
+
+(defun increasing-solls-p (numbers-list)
+  "Checks if a list of numbers is strictly increasing. Useful for checking if a sequence of moves always moves away from the origin."
+  (every #'< numbers-list (cdr numbers-list)))
