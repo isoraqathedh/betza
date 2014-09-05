@@ -40,10 +40,8 @@
 
 (defmethod print-object ((object compound-destination) stream)
   (with-accessors ((elements elements) (combination combination)) object
-    (if *unreadable-compounds*
-        (print-unreadable-object (object stream :type t)
-          (format stream "~s~%~s" combination elements))
-        (format stream "~s" (list :compound combination elements)))))
+    (print-unreadable-object (object stream :type t)
+      (format stream "~s ~s" combination elements))))
 
 (defparameter *primitives*
   (loop with ht = (make-hash-table)
