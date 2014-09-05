@@ -27,6 +27,24 @@
     (with-accessors ((x destination-x) (y destination-y) (signature signature)) object
       (format stream "(~a, ~a) ~s" x y signature))))
 
+(defclass compound-destination ()
+  ((sequence :accessor elements
+             :initarg :sequence
+             :initform nil
+             :documentation "Sequence of destinations that are to be combined end-to-end.")
+   (combination :accessor combination
+                :initarg :combination
+                :initform (error "Combination must be supplied")
+                :documentation "The way that the moves are sequenced."))
+  (:documentation "Compounded destinations – moves that must be created one after the other."))
+
+(defmethod print-object ((object compound-destination) stream)
+  (with-accessors ((elements elements) (combination combination)) object
+    (if *unreadable-compounds*
+        (print-unreadable-object (object stream :type t)
+          (format stream "~s~%~s" combination elements))
+        (format stream "~s" (list :compound combination elements)))))
+
 (defparameter *primitives*
   (loop with ht = (make-hash-table)
         for (landmark . coords) in '((#\W 1 0) (#\F 1 1)
