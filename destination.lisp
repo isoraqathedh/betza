@@ -89,6 +89,7 @@
             (list sig  sig sig  sig  sig  sig  sig  sig))))
 
 (defun force-exist-symbol (name package)
+  "Returns a symbol with an upcased name, interning it in package as necessary."
   (or (find-symbol (string-upcase name)
                    (string-upcase package))
       (intern (string-upcase name)
@@ -123,6 +124,7 @@
                        collect `((equal ,kf-sym ,cases) ,@then))))))
 
 (defun parse-range-modifiers (power)
+  "Read the z, q, g and p modifiers – modifiers that alter the shape of a multi-step process."
   (when (riderp power)
     (list :rider
           (list :limit (riderp power)
@@ -133,10 +135,12 @@
                                        (t :line))))))
 
 (defun parse-movement-modifiers (power)
+  "Read the c and m modifiers – modifiers that control how other pieces block or allow capture at the destination square."
   (list :move (movingp (modifiers power))
         :capture (capturingp (modifiers power))))
 
 (defun parse-jumping-modifiers (power)
+  "Read the j and n modifiers – modifiers that control how otehr pieces block or allow capture on the way to the destination."
   (when (or (riderp power)
             (not (or (equal (landmark power) "W")
                      (equal (landmark power) "F"))))
@@ -220,6 +224,7 @@
                          (#\s (list :fl :l :bl :fr :r :br)))))))))
 
 (defun find-destination-roots (power)
+  "Parse a simple power (a non-compound), putting in appropriate signatures."
   (let ((signature
           (append
            (parse-movement-modifiers power)
