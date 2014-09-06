@@ -23,9 +23,11 @@
   (:documentation "A representation of what a piece can do at a square."))
 
 (defmethod print-object ((object destination) stream)
-  (print-unreadable-object (object stream :type t)
-    (with-accessors ((x destination-x) (y destination-y) (signature signature)) object
-      (format stream "(~a, ~a) ~s" x y signature))))
+  (let ((*print-level* 4)
+        (*print-pretty* nil))
+    (print-unreadable-object (object stream :type t)
+      (with-accessors ((x destination-x) (y destination-y) (signature signature)) object
+        (format stream "(~a, ~a) ~s" x y signature)))))
 
 (defclass compound-destination ()
   ((sequence :accessor elements
