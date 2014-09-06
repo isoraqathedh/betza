@@ -223,7 +223,7 @@
                          (#\v (list :fl :f :fr :bl :b :br))
                          (#\s (list :fl :l :bl :fr :r :br)))))))))
 
-(defun find-destination-roots (power)
+(defun parse-simple-power (power)
   "Parse a simple power (a non-compound), putting in appropriate signatures."
   (let ((signature
           (append
