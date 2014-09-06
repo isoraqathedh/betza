@@ -151,7 +151,7 @@
                             ((#\Q #\K) :hybrid)
                             (#\R :orthogonal)
                             (#\B :diagonal)
-                            (t (error (format nil "Landmark ~s not found." landmark)))))
+                            (t (error "Landmark ~s not found." landmark))))
           ((apply #'= displacement) :diagonal)
           ((some #'zerop displacement) :orthogonal)
           (t :hippogonal))))
@@ -184,7 +184,7 @@
          ("f" (list :fr :fl))
          ("l" (list :fl :bl))
          (("br" "bl" "fr" "fl") (list (force-exist-symbol effective-directions :keyword)))
-         (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
+         (t (error "No match for directional modifier ~a found." effective-directions)))))
     (:hippogonal
      (let ((effective-directions (remove-if-not #'(lambda (p) (find p "brflvsh")) modifier-string)))
        (case-using-equal effective-directions
@@ -205,7 +205,7 @@
          ("rv" (list :ffr :ffl))
          (("ffr" "ffl" "fsr" "fsl" "bbr" "bbl" "bsr" "bsl")
           (list (force-exist-symbol effective-directions :keyword)))
-         (t (error (format nil "No match for directional modifier ~a found." effective-directions))))))
+         (t (error "No match for directional modifier ~a found." effective-directions)))))
     (:hybrid
      (if (equal "" (remove-if-not #'(lambda (p) (find p "brflvs")) modifier-string))
          (list :bl :b :br :fl :f :fr :r :l)
