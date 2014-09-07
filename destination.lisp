@@ -37,13 +37,17 @@
    (combination :accessor combination
                 :initarg :combination
                 :initform (error "Combination must be supplied")
-                :documentation "The way that the moves are sequenced."))
+                :documentation "The way that the moves are sequenced.")
+   (obligate-complete-p :accessor obligate-complete-p
+                        :initarg :obligate-complete-p
+                        :initform nil
+                        :documentation "Indicates whether or not the full moveset must be completable for the move to be legal."))
   (:documentation "Compounded destinations – moves that must be created one after the other."))
 
 (defmethod print-object ((object compound-destination) stream)
-  (with-accessors ((elements elements) (combination combination)) object
+  (with-accessors ((elements elements) (combination combination) (obligate-complete-p obligate-complete-p)) object
     (print-unreadable-object (object stream :type t)
-      (format stream "~s ~s" combination elements))))
+      (format stream "~s ~s~%   ~s" combination (if obligate-complete-p :complete :partial) elements))))
 
 (defparameter *primitives*
   (loop with ht = (make-hash-table)
