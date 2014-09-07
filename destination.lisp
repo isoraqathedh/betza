@@ -49,7 +49,7 @@
     (print-unreadable-object (object stream :type t)
       (format stream "~s ~s~%   ~s" combination (if obligate-complete-p :complete :partial) elements))))
 
-(defparameter *primitives*
+(defvar *primitives*
   (loop with ht = (make-hash-table)
         for (landmark . coords) in '((#\W 1 0) (#\F 1 1)
                                      (#\D 2 0) (#\N 2 1) (#\A 2 2)
