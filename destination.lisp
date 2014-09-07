@@ -270,3 +270,34 @@
 (defun increasing-solls-p (numbers-list)
   "Checks if a list of numbers is strictly increasing. Useful for checking if a sequence of moves always moves away from the origin."
   (every #'< numbers-list (cdr numbers-list)))
+
+(defgeneric append-destination (power-1 power-2 &optional combination-schema obligate-complete-p)
+  (:documentation "Combine two destinations into a compound-destination.")
+  (:method ((power-1 destination) (power-2 destination) &optional (combination-schema :linear) obligate-complete-p)
+    (make-instance 'compound-destination
+                   :combination combination-schema
+                   :obligate-complete-p obligate-complete-p
+                   :sequence (list power-1 power-2)))
+  (:method ((power-1 compound-destination) (power-2 destination) &optional (combination-schema (combination power-1)) (obligate-complete-p (obligate-complete-p power-1)))
+    (make-instance 'compound-destination
+                   :combination combination-schema
+                   :obligate-complete-p obligate-complete-p
+                   :sequence (append (elements power-1) (list power-2))))
+  (:method ((power-1 destination) (power-2 compound-destination) &optional (combination-schema (combination power-2)) (obligate-complete-p (obligate-complete-p power-2)))
+    (append-destination power-2 power-1 combination-schema obligate-complete-p))
+  (:method ((power-1 compound-destination) (power-2 compound-destination) &optional (combination-schema (combination power-1)) (obligate-complete-p (obligate-complete-p power-1)))
+    (make-instance 'compound-destination
+                   :combination combination-schema
+                   :obligate-complete-p obligate-complete-p
+                   :sequence (append (elements power-1) (elements power-2)))))
+  ;; (:method ((power-1 list) (power-2 list) &optional (combination-schema :linear) obligate-complete-p)
+  ;;   (loop for i in power-1
+  ;;         append (loop for j in power-2
+  ;;                      when (or (not obligate-complete-p)
+  ;;                               (
+
+;; (defun parse-power (power)
+;;   (let ((lm (landmark power)))
+;;     (if (type-of lm 'power)
+;;         (parse-simple-power power)
+;;         (
