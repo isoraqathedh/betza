@@ -291,12 +291,14 @@
     (make-instance 'compound-destination
                    :combination combination-schema
                    :obligate-complete-p obligate-complete-p
-                   :sequence (append (elements power-1) (elements power-2)))))
-  ;; (:method ((power-1 list) (power-2 list) &optional (combination-schema :linear) obligate-complete-p)
-  ;;   (loop for i in power-1
-  ;;         append (loop for j in power-2
-  ;;                      when (or (not obligate-complete-p)
-  ;;                               (
+                   :sequence (append (elements power-1) (elements power-2))))
+  (:method ((power-1 list) (power-2 list) &optional (combination-schema :linear) obligate-complete-p)
+    (loop for i in power-1
+          append (loop for j in power-2
+                       when (not (and obligate-complete-p
+                                      (not (increasing-solls-p (list (soll i) (soll j))))))
+                         collect (append-destination i j)))))
+                                                                
 
 ;; (defun parse-power (power)
 ;;   (let ((lm (landmark power)))
