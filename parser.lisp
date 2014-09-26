@@ -8,7 +8,8 @@
    #:limit
    #:piece
    #:powers
-   #:parse-piece))
+   #:parse-piece
+   #:string->power))
 
 (in-package #:betza-lexer)
 (define-matcher uppercase (in #\A #\Z))
@@ -54,6 +55,10 @@
      :landmark landmark
      :modifiers modifiers
      :limit (read-number))))
+
+(defun string->power (string)
+  (with-lexer-environment (string)
+    (read-power)))
 
 (defun parse-piece (string)
   (with-lexer-environment (string)
