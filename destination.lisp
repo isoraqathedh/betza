@@ -254,10 +254,12 @@
     (with-accessors ((x destination-x) (y destination-y)) destination
       (+ (expt x 2) (expt y 2))))
   (:method ((list list) &optional want-partial-sums)
+    (when (eql (type-of (first list)) 'destination)
+      (setf list (loop for i in list collect (destination-x i) collect (destination-y i))))
     (loop with most-recent = 0
-          for i in list
-          summing (destination-x i) into sum-x
-          summing (destination-y i) into sum-y
+          for (x y) on list by #'cddr
+          summing x into sum-x
+          summing y into sum-y
           doing (setf most-recent (+ (expt sum-x 2) (expt sum-y 2)))
           collecting most-recent into partial-sums
           finally (return (if want-partial-sums partial-sums most-recent))))
