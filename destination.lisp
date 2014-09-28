@@ -144,7 +144,7 @@
         :capture (capturingp (modifiers power))))
 
 (defun parse-jumping-modifiers (power)
-  "Read the j and n modifiers – modifiers that control how otehr pieces block or allow capture on the way to the destination."
+  "Read the j and n modifiers – modifiers that control how other pieces block or allow capture on the way to the destination."
   (when (or (riderp power)
             (not (or (equal (landmark power) "W")
                      (equal (landmark power) "F"))))
