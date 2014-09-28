@@ -298,7 +298,6 @@
                        when (not (and obligate-complete-p
                                       (not (increasing-solls-p (list (soll i) (soll j))))))
                          collect (append-destination i j)))))
-                                                                
 
 ;; (defun parse-power (power)
 ;;   (let ((lm (landmark power)))
