@@ -295,8 +295,7 @@
   (:method ((power-1 list) (power-2 list) &optional (combination-schema :linear) obligate-complete-p)
     (loop for i in power-1
           append (loop for j in power-2
-                       when (not (and (not (increasing-solls-p (list (soll i) (soll (append-destination i j)))))
-                                      obligate-complete-p))
+                       when (increasing-solls-p (list (soll i) (soll (append-destination i j))))
                          collect (append-destination i j combination-schema obligate-complete-p)))))
 
 (defun parse-power (power)
