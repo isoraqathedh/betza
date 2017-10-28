@@ -1,19 +1,6 @@
-(defpackage #:info.isoraqathedh.betza-lexer
-  (:use #:cl #:plump-parser)
-  (:nicknames :betza-lexer)
-  (:export 
-   #:power
-   #:landmark
-   #:modifiers
-   #:limit
-   #:piece
-   #:powers
-   #:parse-piece
-   #:string->power))
-
 (in-package #:betza-lexer)
-(define-matcher uppercase (in #\A #\Z))
-(define-matcher number (in #\0 #\9))
+(plump:define-matcher uppercase (in #\A #\Z))
+(plump:define-matcher number (in #\0 #\9))
 
 (defclass power ()
   ((landmark :initarg :landmark :initform (error "LANDMARK required") :accessor landmark)
