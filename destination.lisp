@@ -1,5 +1,3 @@
-(defpackage :info.isoraqathedh.betza.board
-  (:use #:cl #:betza-lexer))
 
 (in-package :info.isoraqathedh.betza.board)
 

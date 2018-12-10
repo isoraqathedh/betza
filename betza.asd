@@ -1,8 +1,6 @@
-(defpackage #:info.isoraqathedh.betza-asdf
-  (:use #:cl #:asdf))
-(in-package #:info.isoraqathedh.betza-asdf)
+(in-package #:cl-user)
 
-(defsystem betza
+(asdf:defsystem #:betza
   :name "Betza → Movement Diagram"
   ;:version "B.4.0.00.1"
   :licence "MIT"
