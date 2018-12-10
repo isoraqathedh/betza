@@ -1,4 +1,7 @@
 (in-package #:betza-lexer)
+
+(named-readtables:in-readtable 'betza-readtable)
+
 (plump:define-matcher uppercase (in #\A #\Z))
 (plump:define-matcher number (in #\0 #\9))
 
