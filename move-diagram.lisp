@@ -8,19 +8,18 @@
 
 ;;; The board
 (defclass chess-board ()
-  ((board-size :initarg :size
-               :initform 3
-               :reader board-size)
-   (board :reader board)
+  ((board :reader board)
    (features :initform nil
-             :accessor features)))
+             :accessor features))
+  (:default-initargs
+   :size 3))
 
-(defmethod initialize-instance :after ((instance chess-board) &key)
-  (with-slots (board board-size) instance
-    (setf board (make-array (list (1+ (* 2 board-size))
-                                  (1+ (* 2 board-size)))
+(defmethod initialize-instance :after ((instance chess-board) &key size &allow-other-keys)
+  (with-slots (board) instance
+    (setf board (make-array (list (1+ (* 2 size))
+                                  (1+ (* 2 size)))
                             :initial-element nil)
-          (aref board board-size board-size) (list :piece))))
+          (aref board size size) (list :piece))))
 
 (defgeneric board-coords (board coordinate-x coordinate-y)
   (:documentation "Get the feature in the coordinates of the board.")
@@ -40,6 +39,16 @@
                   (- board-size coordinate-y)
                   (+ board-size coordinate-x))
             val))))
+
+(defgeneric add-to-generated-square (feature board generator)
+  (:documentation "Add a feature to the generated coordinate of the board.")
+  (:method ((feature symbol) (board chess-board) (generator function))
+    (betza-generators:with-parsed-square (funcall generator) x y
+      (pushnew feature (board-coords board x y))))
+  (:method ((feature list) (board chess-board) (generator function))
+    ;; assume list of features (keywords)
+    (betza-generators:with-parsed-square (funcall generator) x y
+      (alexandria:unionf (board-coords board x y) feature))))
 
 ;;; The painters
 ;; Basic painter class

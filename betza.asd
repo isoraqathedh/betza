@@ -6,7 +6,8 @@
   :licence "MIT"
   :description "Simple converter of Betza Funny notation into movement diagrams (plus a few more things in passing)"
   :serial T
-  :components ((:file "parser")
+  :components ((:file "package")
+               (:file "parser")
                ;;(:file "destination")
                (:file "move-diagram"))
-  :depends-on (:plump :iterate))
+  :depends-on (:plump :named-readtables))
