@@ -5,6 +5,10 @@
 (defvar *edge-colour*  #(131 57 0))
 (defvar *square-size*  50)
 
+(defun piece-image (name)
+  (merge-pathnames (make-pathname :name name :type "png")
+                   (asdf:system-relative-pathname 'betza "alfaerie/")))
+
 (defclass board-image ()
   ((margin :initarg :margin
            :reader margin)
